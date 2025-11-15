@@ -11,6 +11,10 @@ public class Todo {
     private String title;
     private boolean completed;
 
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
     public Long getId() {
         return id;
     }
@@ -34,4 +38,5 @@ public class Todo {
     public void setCompleted(boolean completed) {
         this.completed = completed;
     }
+
 }
