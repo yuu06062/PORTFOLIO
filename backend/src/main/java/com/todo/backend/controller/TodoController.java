@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -40,16 +42,33 @@ public class TodoController {
     }
 
 
-    @PatchMapping("/{id}")
-    public Todo updateTodo(@PathVariable Long id,@RequestBody Todo updatedTodo) {
-        Todo todo = todoRepository.findById(id).orElseThrow();
-        todo.setTitle(updatedTodo.getTitle());
-        todo.setCompleted(updatedTodo.isCompleted());
-        return todoRepository.save(todo);
+ @PatchMapping("/{id}")
+public ResponseEntity<?> updateTodo(@PathVariable Long id, @RequestBody Todo updatedTodo) {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    String username = auth.getName();
+    User user = userRepository.findByUsername(username);
+
+    Todo todo = todoRepository.findById(id).orElse(null);
+    if (todo == null || !todo.getUser().getId().equals(user.getId())) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("他人のToDoは編集できません");
     }
 
-    @DeleteMapping("/{id}")
-    public void deleteTodo(@PathVariable Long id) {
-        todoRepository.deleteById(id);
+    todo.setTitle(updatedTodo.getTitle());
+    todo.setCompleted(updatedTodo.isCompleted());
+    return ResponseEntity.ok(todoRepository.save(todo));
+}
+
+@DeleteMapping("/{id}")
+public ResponseEntity<?> deleteTodo(@PathVariable Long id) {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    String username = auth.getName();
+    User user = userRepository.findByUsername(username);
+
+    Todo todo = todoRepository.findById(id).orElse(null);
+    if (todo == null || !todo.getUser().getId().equals(user.getId())) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("他人のToDoは削除できません");
     }
+
+    todoRepository.delete(todo);
+    return ResponseEntity.ok("削除しました");
 }
