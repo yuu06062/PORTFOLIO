@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ToDoリスト</title>
+  <style>
+    body { font-family: sans-serif; margin: 40px; }
+    h2 { margin-bottom: 20px; display: inline-block; }
+    #logout-btn {
+      float: right;
+      padding: 6px 12px;
+      background: #f44336;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    ul { list-style: none; padding: 0; }
+    li { margin: 8px 0; }
+    button { margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <h2>ToDoリスト</h2>
+  <button id="logout-btn">ログアウト</button>
+
+  <ul id="list"></ul>
+
+  <form id="create-form">
+    <input type="text" name="title" placeholder="タイトル" required>
+    <label><input type="checkbox" name="completed"> 完了済み</label>
+    <button type="submit">追加</button>
+  </form>
+
+  <script>
+    // リストに1件追加する関数
+    function addTodoToList(todo) {
+      const ul = document.getElementById('list');
+      const li = document.createElement('li');
+      li.textContent = `${todo.title} [${todo.completed ? 'done' : 'todo'}]`;
+      ul.appendChild(li);
+    }
+
+    // 一覧取得
+    async function loadTodos() {
+      const res = await fetch('/todos', { credentials: 'include' });
+      if (!res.ok) {
+        alert('取得失敗: ' + res.status);
+        return;
+      }
+      const data = await res.json();
+      const ul = document.getElementById('list');
+      ul.innerHTML = '';
+      data.forEach(t => addTodoToList(t));
+    }
+
+    // 新規追加
+    document.getElementById('create-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const payload = {
+        title: fd.get('title'),
+        completed: fd.get('completed') === 'on'
+      };
+
+      const res = await fetch('/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const newTodo = await res.json(); // サーバーから返ってきた新しいToDo
+        addTodoToList(newTodo);           // 直接リストに追加
+        e.target.reset();                 // 入力欄を空にする
+      } else {
+        const text = await res.text();
+        alert('追加失敗: ' + res.status + ' ' + text);
+      }
+    });
+
+    // ログアウト処理
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try {
+        await fetch('/logout', { method: 'POST', credentials: 'include' });
+      } catch (e) {
+        console.error('ログアウトエラー', e);
+      }
+      window.location.href = '/login.html';
+    });
+
+    // ページ読み込み時に一覧を表示
+    window.onload = loadTodos;
+  </script>
+</body>
+</html>
