@@ -6,6 +6,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 @Entity
 public class Todo {
 
@@ -18,6 +19,8 @@ public class Todo {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnore
+
     private User user;
 
     public Long getId() {
